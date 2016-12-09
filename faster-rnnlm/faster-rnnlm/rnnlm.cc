@@ -368,7 +368,8 @@ void TrainLM(
   }
 
 #ifndef NOTHREAD
-  std::vector<pthread_t> threads(n_threads);
+  pthread_t *threads = (pthread_t *)malloc(n_threads * sizeof(pthread_t));
+                                           //  std::vector<pthread_t> threads(n_threads);
 #endif
 
   Real bl_entropy = -1;
@@ -391,7 +392,7 @@ void TrainLM(
     }
 
     SimpleTimer timer;
-    TrainThreadTask* tasks = (TrainThreadTask *)malloc(n_threads * sizeof(TrainThreadTask));
+    TrainThreadTask *tasks = (TrainThreadTask *)malloc(n_threads * sizeof(TrainThreadTask));
                                     //std::vector<TrainThreadTask> tasks(n_threads);
     int64_t n_done_words = 0;
     int64_t n_done_bytes = 0;
@@ -413,11 +414,12 @@ void TrainLM(
       tasks[i].n_done_words = &n_done_words;
       tasks[i].n_done_bytes = &n_done_bytes;
     }
-    //#ifdef RUN_MIC
-    //size_t len = n_threads * sizeof(TrainThreadTask);
-    //#pragma offload target(mic)
-    //inout(tasks: length(len) INOUT) 
-    //#endif
+    #ifdef RUN_MIC
+    size_t len = n_threads * sizeof(TrainThreadTask);
+    #pragma offload target(mic) \
+    inout(tasks: length(len) INOUT) \
+    inout(threads: length(len) INOUT)
+    #endif
     for (int i = 0; i < n_threads; i++) {
 #ifdef NOTHREAD
       RunThread(reinterpret_cast<void*>(&tasks[i]));
@@ -428,6 +430,7 @@ void TrainLM(
       pthread_join(threads[i], NULL);
 #endif
     }
+    free(tasks);
     const double elapsed_train = timer.Tick();
 
     const bool kPrintLogprobs = false;
@@ -475,6 +478,9 @@ void TrainLM(
       bl_entropy = entropy;
     }
   }
+
+
+  free(threads);
 
   if (nnet->cfg.use_nce) {
     delete noise_generator;
