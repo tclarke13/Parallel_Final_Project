@@ -274,10 +274,13 @@ void *RunThread(void *ptr) {
     // Both <s> and </s> are mapped to zero
     const WordIndex* sen = reader.sentence();
     const int seq_length = reader.sentence_length();
-
+    SimpleTimer timer_fwdPass;
+    timer_fwdPass.Reset();
+    double tstart = timer_fwdPass.Tick();
     // Compute hidden layer for all words
     PropagateForward(nnet, sen, seq_length, rec_layer_updater);
-
+    double tEnd = timer_fwdPass.Tick();
+    printf("Elapsed time = %lf\n", tEnd - tstart);
     // Calculate criterion given hidden layers
     const RowMatrix& output = rec_layer_updater->GetOutputMatrix();
     RowMatrix& output_grad = rec_layer_updater->GetOutputGradMatrix();
