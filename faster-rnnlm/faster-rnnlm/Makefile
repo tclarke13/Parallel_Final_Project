@@ -12,6 +12,7 @@ ifeq ($(NOTHREAD), 1)
 else
 	CFLAGS += -pthread
 endif
+	CFLAGS += -fopenmp
 
 NVCC_RESULT := $(shell which nvcc 2> /dev/null)
 NVCC_TEST := $(notdir $(NVCC_RESULT))

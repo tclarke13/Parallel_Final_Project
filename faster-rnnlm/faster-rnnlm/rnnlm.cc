@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#ifndef NOTHREAD
+//#define NOTHREAD
+//#define USE_OMP#ifndef NOTHREAD
 #include <pthread.h>
 #endif
 #ifdef NORT
@@ -23,6 +24,8 @@
 #include "faster-rnnlm/settings.h"
 #include "faster-rnnlm/util.h"
 #include "faster-rnnlm/words.h"
+#include <omp.h>
+
 
 namespace {
 
@@ -97,6 +100,15 @@ struct SimpleTimer {
   }
 
   timeval start;
+#elif defined USE_OMP
+    void Reset() {  start = omp_get_wtime(); }
+
+    double Tick() const {
+      double finish = omp_get_wtime();
+      double elapsed = finish - start;
+      return elapsed;
+    }
+    double start;
 #else
   void Reset() { clock_gettime(CLOCK_MONOTONIC, &start); }
 
@@ -391,6 +403,12 @@ void TrainLM(
     }
 
     SimpleTimer timer;
+#ifdef NOTHREAD 
+    int NUMTHREADS = 2;
+    omp_set_num_threads(NUMTHREADS);
+    n_threads = NUMTHREADS;
+    printf("Number of OMP threads : %d\n", n_threads);
+#endif
     TrainThreadTask* tasks = (TrainThreadTask *)malloc(n_threads * sizeof(TrainThreadTask));
                                     //std::vector<TrainThreadTask> tasks(n_threads);
     int64_t n_done_words = 0;
