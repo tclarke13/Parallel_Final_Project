@@ -436,7 +436,10 @@ void TrainLM(
     //#pragma offload target(mic)
     //inout(tasks: length(len) INOUT) 
     //#endif
-    for (int i = 0; i < n_threads; i++) {
+#ifdef NOTHREAD
+    #pragma omp parallel for
+#endif
+     for (int i = 0; i < n_threads; i++) {
 #ifdef NOTHREAD
       RunThread(reinterpret_cast<void*>(&tasks[i]));
 #else
