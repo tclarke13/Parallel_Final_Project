@@ -1,1 +1,3 @@
 torch-rnn
+*.nnet
+rnnlm
