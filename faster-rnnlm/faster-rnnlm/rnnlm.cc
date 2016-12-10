@@ -74,7 +74,7 @@ struct TrainThreadTask {
   int epoch, n_inner_epochs;
   Real lrate, maxent_lrate;
   const std::string* train_file;
-  std::stringstream* train_contents;
+  char* train_contents;
 
   // global
   uint64_t* seed;
@@ -224,7 +224,8 @@ void *RunThread(void *ptr) {
   Real train_logprob = 0;
   bool kAutoInsertUnk = false;
   //std::stringstream *train_contents = task.train_contents;
-  int64_t train_size = task.train_contents->str().size();
+  std::string train_contents(task.train_contents);
+  int64_t train_size = train_contents.size();
   //SentenceReader reader(nnet->vocab, *task.train_file, nnet->cfg.reverse_sentence, kAutoInsertUnk);
   //reader.SetChunk(task.chunk_id, task.total_chunks);
   int64_t n_done_bytes_local = 0, n_total_bytes = train_size;//reader.GetFileSize();
@@ -238,7 +239,7 @@ void *RunThread(void *ptr) {
   std::string line;
   int substr_len;
   if (task.chunk_id != task.total_chunks - 1){
-    std::size_t found = task.train_contents->str().find("\n", (task.chunk_id + 1) * bytes_per_chunk);
+    std::size_t found = train_contents.find("\n", (task.chunk_id + 1) * bytes_per_chunk);
     if (found != std::string::npos){
       substr_len = found  - pos;
     }
@@ -247,7 +248,7 @@ void *RunThread(void *ptr) {
     substr_len = n_total_bytes - pos;
   }
   //printf("%i %i %i\n", pos, task.chunk_id, substr_len);
-  std::istringstream thread_contents (task.train_contents->str().substr(pos, substr_len));
+  std::istringstream thread_contents (train_contents.substr(pos, substr_len));
   if (task.chunk_id != 0){
     getline(thread_contents, line);
   }
@@ -413,6 +414,10 @@ void TrainLM(
     train_contents << train_stream.rdbuf();
     train_stream.close();
   }
+  size_t train_len = train_contents.str().size();
+  char *train_file_as_char_array = (char *)malloc(train_len + 1);
+  train_contents.str().copy(train_file_as_char_array, train_len);
+  train_file_as_char_array[train_len] = '\0';
   // {std::istreambuf_iterator<char>(train_stream), std::istreambuf_iterator<char>()};
   //std::istringstream train_instream {train_contents};
   //printf("%i\n", train_contents.str().size());
@@ -427,10 +432,9 @@ void TrainLM(
 #endif
 
   
-  #ifdef RUN_MIC
-  //#pragma offload target(mic)                                 \
+  #ifdef RUN_MIC 
   #pragma offload target(mic) in(threads: length(n_threads * sizeof(pthread_t)) ALLOC) \
-  in(train_contents: length(train_contents.size()) ALLOC)
+    inout(train_file_as_char_array: length(train_file_as_char_array) ALLOC)
   #endif
 
   Real bl_entropy = -1;
@@ -468,7 +472,7 @@ void TrainLM(
       tasks[i].lrate = lrate;
       tasks[i].maxent_lrate = maxent_lrate;
       tasks[i].train_file = &train_file;
-      tasks[i].train_contents = &train_contents;
+      tasks[i].train_contents = train_file_as_char_array;
 
       tasks[i].seed = &thread_seeds[i];
       tasks[i].nnet = nnet;
@@ -480,7 +484,7 @@ void TrainLM(
     #pragma offload target(mic) \
     inout(tasks: length(n_threads * sizeof(TrainThreadTask)) INOUT) \
     inout(threads: length(n_threads * sizeof(pthread_t)) REUSE) \
-    inout(train_content: length(train_content.size()) REUSE)
+    inout(train_file_as_char_array: length(train_file_as_char_array) REUSE)
     #endif
     for (int i = 0; i < n_threads; i++) {
 #ifdef NOTHREAD
@@ -545,7 +549,7 @@ void TrainLM(
   #ifdef RUN_MIC
   //#pragma offload target(mic)                                 \
   #pragma offload target(mic) out(threads: length(n_threads * sizeof(pthread_t)) FREE) \
-  out(train_content: length(train_content.size()) FREE)
+    inout(train_file_as_char_array: length(train_file_as_char_array) FREE)
   #endif
 
   free(threads);
