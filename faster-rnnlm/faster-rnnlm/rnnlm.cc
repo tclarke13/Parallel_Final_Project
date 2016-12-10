@@ -223,8 +223,8 @@ void *RunThread(void *ptr) {
 
   Real train_logprob = 0;
   bool kAutoInsertUnk = false;
-  std::stringstream *train_contents = task.train_contents;
-  int64_t train_size = train_contents->str().size();
+  //std::stringstream *train_contents = task.train_contents;
+  int64_t train_size = task.train_contents->str().size();
   //SentenceReader reader(nnet->vocab, *task.train_file, nnet->cfg.reverse_sentence, kAutoInsertUnk);
   //reader.SetChunk(task.chunk_id, task.total_chunks);
   int64_t n_done_bytes_local = 0, n_total_bytes = train_size;//reader.GetFileSize();
@@ -233,20 +233,31 @@ void *RunThread(void *ptr) {
   uint64_t next_random = *task.seed;
   int64_t bytes_per_chunk = n_total_bytes / task.total_chunks;
   int64_t pos = task.chunk_id * bytes_per_chunk;
-  (*train_contents).clear();
-  (*train_contents).seekg(pos, std::ios::beg);
+  //(*train_contents).clear();
+  //(*train_contents).seekg(pos, std::ios::beg);
   std::string line;
-  printf("%i %i\n", pos, task.chunk_id);
-  //if (task.chunk_id != 0){
-    getline(*train_contents, line);
-    // }
-  std::cout << line << "\n";
+  int substr_len;
+  if (task.chunk_id != task.total_chunks - 1){
+    std::size_t found = task.train_contents->str().find("\n", (task.chunk_id + 1) * bytes_per_chunk);
+    if (found != std::string::npos){
+      substr_len = found  - pos;
+    }
+  }
+  else{
+    substr_len = n_total_bytes - pos;
+  }
+  //printf("%i %i %i\n", pos, task.chunk_id, substr_len);
+  std::istringstream thread_contents (task.train_contents->str().substr(pos, substr_len));
+  if (task.chunk_id != 0){
+    getline(thread_contents, line);
+  }
+  //std::cout << line << "\n";
   std::vector<WordIndex> sentence;
   int64_t total_read_bytes = 0;
-  while (getline(*train_contents, line) && total_read_bytes < bytes_per_chunk) {
+  while (getline(thread_contents, line)) {
     //printf("herebegin\n");
     total_read_bytes += line.size();
-    //printf("%i\n", (int)total_read_bytes);
+    //    printf("Thread %i, %s, %i / %i\n", task.chunk_id, line.c_str(), (int)total_read_bytes, (int)bytes_per_chunk);
     std::stringstream ss(line);
     std::string word;
     sentence.clear();
