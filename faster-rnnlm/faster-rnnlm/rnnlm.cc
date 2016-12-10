@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "faster-rnnlm/hierarchical_softmax.h"
 #include "faster-rnnlm/layers/interface.h"
@@ -72,6 +73,7 @@ struct TrainThreadTask {
   int epoch, n_inner_epochs;
   Real lrate, maxent_lrate;
   const std::string* train_file;
+  std::stringstream* train_contents;
 
   // global
   uint64_t* seed;
@@ -220,14 +222,31 @@ void *RunThread(void *ptr) {
 
   Real train_logprob = 0;
   bool kAutoInsertUnk = false;
-  SentenceReader reader(nnet->vocab, *task.train_file, nnet->cfg.reverse_sentence, kAutoInsertUnk);
-  reader.SetChunk(task.chunk_id, task.total_chunks);
-  int64_t n_done_bytes_local = 0, n_total_bytes = reader.GetFileSize();
+  std::stringstream *train_contents = task.train_contents;
+  int64_t train_size = train_contents->str().size();
+  //SentenceReader reader(nnet->vocab, *task.train_file, nnet->cfg.reverse_sentence, kAutoInsertUnk);
+  //reader.SetChunk(task.chunk_id, task.total_chunks);
+  int64_t n_done_bytes_local = 0, n_total_bytes = train_size;//reader.GetFileSize();
   int64_t n_done_words_local = 0, n_last_report_at = 0;
-
+  
   uint64_t next_random = *task.seed;
-  while (reader.Read()) {
-    n_done_words_local += reader.sentence_length();
+  int64_t pos = task.chunk_id * train_contents->str().size() / task.total_chunks;
+  (*train_contents).seekg(pos);
+  std::string line;
+  std::vector<WordIndex> sentence;
+  while (getline(*train_contents, line)) {
+    //printf("herebegin\n");
+    std::stringstream ss(line);
+    std::string word;
+    sentence.push_back(0);
+    while (ss >> word){
+      //printf("%s\n", word);
+      WordIndex idx = nnet->vocab.GetIndexByWord(word.c_str());
+      sentence.push_back(idx);
+      //printf("%s %i\n", word, idx);
+    }
+    sentence.push_back(0);
+    /*n_done_words_local += reader.sentence_length();
     if (n_done_words_local - n_last_report_at > kReportEveryWords) {
       {
         int64_t diff = n_done_words_local - n_last_report_at;
@@ -253,19 +272,22 @@ void *RunThread(void *ptr) {
         }
         fflush(stdout);
       }
-    }
+      }*/
 
-    if (reader.HasOOVWords())
-      continue;
+    //if (reader.HasOOVWords())
+    //continue;
 
     // A sentence contains <s>, followed by (seq_length - 1) actual words, followed by </s>
     // Both <s> and </s> are mapped to zero
-    const WordIndex* sen = reader.sentence();
-    const int seq_length = reader.sentence_length();
+    //printf("here\n");
+    const WordIndex* sen = (WordIndex *) &sentence[0];
+    //printf("here2\n");
+    const int seq_length = sentence.size() - 1;
+    //printf("here3\n");
 
     // Compute hidden layer for all words
     PropagateForward(nnet, sen, seq_length, rec_layer_updater);
-
+    //printf("here4\n");
     // Calculate criterion given hidden layers
     const RowMatrix& output = rec_layer_updater->GetOutputMatrix();
     RowMatrix& output_grad = rec_layer_updater->GetOutputGradMatrix();
@@ -298,9 +320,9 @@ void *RunThread(void *ptr) {
             output_grad.row(target - 1), &nnet->maxent_layer);
       }
     }
-
+    //printf("here5\n");
     rec_layer_updater->BackwardSequence(seq_length, GetNextRandom(&next_random), bptt_period, bptt);
-
+    //printf("here6\n");
     // Update embeddings
     if (learn_embeddings) {
       RowMatrix& input_grad = rec_layer_updater->GetInputGradMatrix();
@@ -311,11 +333,12 @@ void *RunThread(void *ptr) {
         nnet->embeddings.row(last_word).noalias() += input_grad.row(input) * task.lrate;
       }
     }
-
+    //printf("here7\n");
     // Update recurrent weights
     if (learn_recurrent) {
       rec_layer_updater->UpdateWeights(seq_length, task.lrate, l2reg, rmsprop, gradient_clipping);
     }
+    //printf("here8\n");
   }
 
   delete rec_layer_updater;
@@ -361,7 +384,15 @@ void TrainLM(
         nnet->vocab, nce_unigram_power, nce_unigram_min_cells);
     }
   }
-
+  std::ifstream train_stream {train_file};
+  std::stringstream train_contents (std::stringstream::in | std::stringstream::out);
+  if (train_stream){
+    train_contents << train_stream.rdbuf();
+    train_stream.close();
+  }
+  // {std::istreambuf_iterator<char>(train_stream), std::istreambuf_iterator<char>()};
+  //std::istringstream train_instream {train_contents};
+  //printf("%i\n", train_contents.str().size());
   std::vector<uint64_t> thread_seeds(n_threads);
   for (size_t i = 0; i < thread_seeds.size(); ++i) {
     thread_seeds[i] = i;
@@ -371,6 +402,13 @@ void TrainLM(
   pthread_t *threads = (pthread_t *)malloc(n_threads * sizeof(pthread_t));
                                            //  std::vector<pthread_t> threads(n_threads);
 #endif
+
+  
+  #ifdef RUN_MIC
+  //#pragma offload target(mic)                                 \
+  #pragma offload target(mic) in(threads: length(n_threads * sizeof(pthread_t)) ALLOC) \
+  in(train_contents: length(train_contents.size()) ALLOC)
+  #endif
 
   Real bl_entropy = -1;
   {
@@ -407,6 +445,7 @@ void TrainLM(
       tasks[i].lrate = lrate;
       tasks[i].maxent_lrate = maxent_lrate;
       tasks[i].train_file = &train_file;
+      tasks[i].train_contents = &train_contents;
 
       tasks[i].seed = &thread_seeds[i];
       tasks[i].nnet = nnet;
@@ -415,10 +454,10 @@ void TrainLM(
       tasks[i].n_done_bytes = &n_done_bytes;
     }
     #ifdef RUN_MIC
-    size_t len = n_threads * sizeof(TrainThreadTask);
     #pragma offload target(mic) \
-    inout(tasks: length(len) INOUT) \
-    inout(threads: length(len) INOUT)
+    inout(tasks: length(n_threads * sizeof(TrainThreadTask)) INOUT) \
+    inout(threads: length(n_threads * sizeof(pthread_t)) REUSE) \
+    inout(train_content: length(train_content.size()) REUSE)
     #endif
     for (int i = 0; i < n_threads; i++) {
 #ifdef NOTHREAD
@@ -479,6 +518,12 @@ void TrainLM(
     }
   }
 
+  //train_stream.close();
+  #ifdef RUN_MIC
+  //#pragma offload target(mic)                                 \
+  #pragma offload target(mic) out(threads: length(n_threads * sizeof(pthread_t)) FREE) \
+  out(train_content: length(train_content.size()) FREE)
+  #endif
 
   free(threads);
 
