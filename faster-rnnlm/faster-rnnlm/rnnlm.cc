@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 #include "faster-rnnlm/hierarchical_softmax.h"
 #include "faster-rnnlm/layers/interface.h"
@@ -230,14 +231,25 @@ void *RunThread(void *ptr) {
   int64_t n_done_words_local = 0, n_last_report_at = 0;
   
   uint64_t next_random = *task.seed;
-  int64_t pos = task.chunk_id * train_contents->str().size() / task.total_chunks;
-  (*train_contents).seekg(pos);
+  int64_t bytes_per_chunk = n_total_bytes / task.total_chunks;
+  int64_t pos = task.chunk_id * bytes_per_chunk;
+  (*train_contents).clear();
+  (*train_contents).seekg(pos, std::ios::beg);
   std::string line;
+  printf("%i %i\n", pos, task.chunk_id);
+  //if (task.chunk_id != 0){
+    getline(*train_contents, line);
+    // }
+  std::cout << line << "\n";
   std::vector<WordIndex> sentence;
-  while (getline(*train_contents, line)) {
+  int64_t total_read_bytes = 0;
+  while (getline(*train_contents, line) && total_read_bytes < bytes_per_chunk) {
     //printf("herebegin\n");
+    total_read_bytes += line.size();
+    //printf("%i\n", (int)total_read_bytes);
     std::stringstream ss(line);
     std::string word;
+    sentence.clear();
     sentence.push_back(0);
     while (ss >> word){
       //printf("%s\n", word);
@@ -516,7 +528,7 @@ void TrainLM(
       nnet->Save(model_weight_file);
       bl_entropy = entropy;
     }
-  }
+  } //loop over epochs
 
   //train_stream.close();
   #ifdef RUN_MIC
