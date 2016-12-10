@@ -434,7 +434,7 @@ void TrainLM(
   
   #ifdef RUN_MIC 
   #pragma offload target(mic) in(threads: length(n_threads * sizeof(pthread_t)) ALLOC) \
-    inout(train_file_as_char_array: length(train_file_as_char_array) ALLOC)
+    inout(train_file_as_char_array: length(train_len) ALLOC)
   #endif
 
   Real bl_entropy = -1;
@@ -484,7 +484,7 @@ void TrainLM(
     #pragma offload target(mic) \
     inout(tasks: length(n_threads * sizeof(TrainThreadTask)) INOUT) \
     inout(threads: length(n_threads * sizeof(pthread_t)) REUSE) \
-    inout(train_file_as_char_array: length(train_file_as_char_array) REUSE)
+    inout(train_file_as_char_array: length(train_len) REUSE)
     #endif
     for (int i = 0; i < n_threads; i++) {
 #ifdef NOTHREAD
@@ -549,7 +549,7 @@ void TrainLM(
   #ifdef RUN_MIC
   //#pragma offload target(mic)                                 \
   #pragma offload target(mic) out(threads: length(n_threads * sizeof(pthread_t)) FREE) \
-    inout(train_file_as_char_array: length(train_file_as_char_array) FREE)
+    inout(train_file_as_char_array: length(train_len) FREE)
   #endif
 
   free(threads);
