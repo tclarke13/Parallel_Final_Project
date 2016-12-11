@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+//#define NOTHREAD
 #ifndef NOTHREAD
 #include <pthread.h>
 #endif
@@ -51,7 +52,7 @@ bool learn_embeddings = true, learn_recurrent = true;
 // - early stopping
 Real bad_ratio = 1.003, awful_ratio = 0.997;
 Real lr_decay_factor = 2;
-int max_bad_epochs = 2;
+int max_bad_epochs = 3;
 // - nce
 int nce_samples = 0;
 std::string nce_maxent_model_weight_file;
@@ -62,6 +63,14 @@ double nce_unigram_min_cells = 5;
 
 struct SimpleTimer;
 
+/*class _Cilk_shared myNNet {
+  NNet nnet;
+public:
+  myNNet(NNet init)
+  {
+    nnet = init;
+  }
+};*/
 
 struct TrainThreadTask {
   // local
@@ -270,6 +279,7 @@ void *RunThread(void *ptr) {
     const RowMatrix& output = rec_layer_updater->GetOutputMatrix();
     RowMatrix& output_grad = rec_layer_updater->GetOutputGradMatrix();
     output_grad.topRows(seq_length).setZero();
+    //#pragma omp parallel for
     for (int target = 1; target <= seq_length; ++target) {
       const Real* output_row = output.row(target - 1).data();
       Real* output_grad_row = output_grad.row(target - 1).data();
@@ -335,6 +345,7 @@ void TrainLM(
     NNet* nnet) {
   NNet* noise_net = NULL;
   INoiseGenerator* noise_generator = NULL;
+
   if (nnet->cfg.use_nce) {
     if (nce_maxent_model_weight_file[0] != 0) {
       const bool kUseCuda = true;
@@ -367,17 +378,71 @@ void TrainLM(
     thread_seeds[i] = i;
   }
 
+  // if (nnet->cfg.use_nce) {
+  //   if (nce_maxent_model_weight_file[0] != 0) {
+  //     const bool kUseCuda = true;
+  //     const bool kUseCudaMemoryEfficient = true;
+  //     noise_net = new NNet(nnet->vocab, nce_maxent_model_weight_file, kUseCuda, kUseCudaMemoryEfficient);
+  //     if (noise_net->cfg.layer_size != 0) {
+  //       fprintf(stderr, "ERROR: Cannot initialize HSMaxEntNoiseGenerator (layer size != 0)\n");
+  //       exit(1);
+  //     }
+
+  //     {
+  //       const bool kPrintLogprobs = false;
+  //       const bool kNCEAccurate = true;
+  //       Real test_enropy = EvaluateLM(noise_net, valid_file, kPrintLogprobs, kNCEAccurate);
+  //       fprintf(stderr, "Noise Model Valid entropy %f\n", test_enropy);
+  //     }
+
+  //     noise_generator = new HSMaxEntNoiseGenerator(
+  //       noise_net->softmax_layer, &noise_net->maxent_layer,
+  //       noise_net->cfg.maxent_hash_size, nnet->vocab.size(),
+  //       noise_net->cfg.maxent_order);
+  //   } else {
+  //     noise_generator = new UnigramNoiseGenerator(
+  //       nnet->vocab, nce_unigram_power, nce_unigram_min_cells);
+  //   }
+  // }
+  std::ifstream train_stream {train_file};
+  std::stringstream train_contents (std::stringstream::in | std::stringstream::out);
+  if (train_stream){
+    train_contents << train_stream.rdbuf();
+    train_stream.close();
+  }
+  size_t train_len = train_contents.str().size();
+  char *train_file_as_char_array = (char *)malloc(train_len + 1);
+  train_contents.str().copy(train_file_as_char_array, train_len);
+  train_file_as_char_array[train_len] = '\0';
+  // {std::istreambuf_iterator<char>(train_stream), std::istreambuf_iterator<char>()};
+  //std::istringstream train_instream {train_contents};
+  //printf("%i\n", train_contents.str().size());
+   std::vector<uint64_t> thread_seeds(n_threads);
+   for (size_t i = 0; i < thread_seeds.size(); ++i) {
+     thread_seeds[i] = i;
+   }
+
 #ifndef NOTHREAD
   std::vector<pthread_t> threads(n_threads);
 #endif
 
   Real bl_entropy = -1;
+  
+  #ifdef RUN_MIC 
+  // #pragma offload target(mic) in(threads: length(n_threads * sizeof(pthread_t)) ALLOC) \
+  //   inout(train_file_as_char_array: length(strlen(train_file_as_char_array)) ALLOC) 
+    // nocopy(nnet: length(sizeof(NNet)) ALLOC)
+  #endif
+
   {
-    const bool kPrintLogprobs = false;
-    const bool kNCEAccurate = true;
-    bl_entropy = EvaluateLM(nnet, valid_file, kPrintLogprobs, kNCEAccurate);
-    fprintf(stderr, "Initial entropy (bits) valid: %8.5f\n", bl_entropy);
-  }
+    // printf("OFFLOADED\n");
+  Real bl_entropy = -1;
+  // NNet *nnet = NULL;
+  const bool kPrintLogprobs = false;
+  const bool kNCEAccurate = true;
+  bl_entropy = EvaluateLM(nnet, valid_file, kPrintLogprobs, kNCEAccurate);
+  fprintf(stderr, "Initial entropy (bits) valid: %8.5f\n", bl_entropy);
+
 
   bool do_lr_decay = false;
   Real lrate = initial_lrate;
@@ -389,7 +454,8 @@ void TrainLM(
       lrate /= lr_decay_factor;
       maxent_lrate /= lr_decay_factor;
     }
-
+    //uint64_t Seed = 1;
+    //uint64_t *seed = &Seed;
     SimpleTimer timer;
     TrainThreadTask* tasks = (TrainThreadTask *)malloc(n_threads * sizeof(TrainThreadTask));
                                     //std::vector<TrainThreadTask> tasks(n_threads);
@@ -413,11 +479,22 @@ void TrainLM(
       tasks[i].n_done_words = &n_done_words;
       tasks[i].n_done_bytes = &n_done_bytes;
     }
+
     //#ifdef RUN_MIC
     //size_t len = n_threads * sizeof(TrainThreadTask);
     //#pragma offload target(mic)
     //inout(tasks: length(len) INOUT) 
     //#endif
+
+    
+    
+    // #ifdef RUN_MIC
+    // #pragma offload target(mic) \
+    // inout(tasks: length(n_threads * sizeof(TrainThreadTask)) INOUT) \
+    // inout(threads: length(n_threads * sizeof(pthread_t)) INOUT) \
+    // inout(train_file_as_char_array: length(strlen(train_file_as_char_array)) INOUT)
+    // #endif
+     //#pragma omp parallel for schedule(static)
     for (int i = 0; i < n_threads; i++) {
 #ifdef NOTHREAD
       RunThread(reinterpret_cast<void*>(&tasks[i]));
@@ -428,7 +505,13 @@ void TrainLM(
       pthread_join(threads[i], NULL);
 #endif
     }
+
     const double elapsed_train = timer.Tick();
+
+  
+    free(tasks);
+      const double elapsed_train = timer.Tick();
+
 
     const bool kPrintLogprobs = false;
     const bool kNCEAccurate = true;
@@ -452,6 +535,7 @@ void TrainLM(
     }
 
     Real ratio = bl_entropy / entropy;
+
     if (isnan(entropy) || isinf(entropy) || !(ratio >= bad_ratio)) {
       // !(ratio >= bad_ratio) will catch nan and inf even in fastmath mode
       if (isnan(entropy) || isinf(entropy) || !(ratio >= awful_ratio)) {
@@ -474,6 +558,21 @@ void TrainLM(
       nnet->Save(model_weight_file);
       bl_entropy = entropy;
     }
+
+  }
+
+
+  } //loop over epochs
+
+  //train_stream.close();
+  #ifdef RUN_MIC
+  //#pragma offload target(mic)                                 \
+  #pragma offload target(mic) out(threads: length(n_threads * sizeof(pthread_t)) FREE) \
+    inout(train_file_as_char_array: length(train_file_as_char_array) FREE)
+  #endif
+#ifndef NOTHREAD
+  free(threads);
+#endif
   }
 
   if (nnet->cfg.use_nce) {
@@ -602,7 +701,6 @@ int main(int argc, char **argv) {
 #ifdef DETECT_FPE
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
 #endif
-
   std::string layer_type = "sigmoid";
   int layer_size = 100, maxent_order = 0, random_seed = 0, hs_arity = 2;
   uint64_t maxent_hash_size = 0;
@@ -689,18 +787,21 @@ int main(int argc, char **argv) {
 
   if (argc == 1) {
     opts.PrintHelp();
-    return 0;
+    //return 0;
+    exit(1);
   }
   opts.Parse(argc, argv);
 
   bptt_period = bptt + bptt_skip;
   if (model_vocab_file.empty()) {
     fprintf(stderr, "ERROR model file argument (-rnnlm) is required\n");
-    return 1;
+    exit(1);
+    // return 1;
   }
   if (test_file.empty() && train_file.empty() && n_samples == 0) {
     fprintf(stderr, "ERROR you must provide either train file or test file\n");
-    return 1;
+    exit(1);
+    // return 1;
   }
 
   if (maxent_hash_size == 0 || maxent_order == 0) {
@@ -708,11 +809,13 @@ int main(int argc, char **argv) {
     maxent_order = 0;
   } else if (maxent_order > MAX_NGRAM_ORDER) {
     fprintf(stderr, "ERROR maxent_order must be less than or equal to %d\n", MAX_NGRAM_ORDER);
-    return 1;
+    exit(1);
+    // return 1;
   }
   if (bad_ratio < awful_ratio) {
     fprintf(stderr, "ERROR Value for -stop ratio must be less or equal to -reject-threshold ratio\n");
-    return 1;
+    exit(1);
+    // return 1;
   }
 
   if (!nce_accurate_test && !test_file.empty()) {

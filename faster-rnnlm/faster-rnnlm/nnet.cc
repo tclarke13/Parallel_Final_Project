@@ -1,4 +1,7 @@
+//#pragma offload_attribute(push, _Cilk_shared)
+
 #include "faster-rnnlm/nnet.h"
+//#pragma offload_attribute(pop)
 
 #include <algorithm>
 #include <cmath>
@@ -14,6 +17,7 @@ const int kCurrentVersion = 6;
 const unsigned kMaxLayerTypeName = 64;  // maximum size of layer name type in bytes (including \0)
 const std::string kDefaultLayerType = "sigmoid";
 };  // unnamed namespace
+
 
 
 static void ReadHeader(FILE* file, NNetConfig* cfg, int* version_ptr) {
@@ -74,6 +78,7 @@ static NNetConfig ReadConfig(const std::string& model_file) {
   return cfg;
 }
 
+//#pragma offload_attribute(push, _Cilk_shared)
 
 NNet::NNet(const Vocabulary& vocab, const NNetConfig& cfg, bool use_cuda,
            bool use_cuda_memory_efficient)
@@ -150,6 +155,8 @@ void NNet::Init() {
 void NNet::ApplyDiagonalInitialization(Real alpha) {
   rec_layer->GetWeights()->DiagonalInitialization(alpha);
 }
+//#pragma offload_attribute(push, target(mic))
+
 
 void NNet::Save(const std::string& model_file) const {
   if (
@@ -224,3 +231,7 @@ void NNet::ReLoad(const std::string& model_file) {
   maxent_layer.Load(file);
   fclose(file);
 }
+
+//#pragma offload_attribute(pop)
+//#pragma offload_attribute(pop)
+
