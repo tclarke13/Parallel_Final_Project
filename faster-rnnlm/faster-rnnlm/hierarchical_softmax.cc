@@ -408,11 +408,13 @@ inline void PropagateNodeBackward(
     Real* sm_embedding = hs->weights_.row(child_offset).data();
 
     // Propagate errors output -> hidden
+//#pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < hs->layer_size; ++i) {
       hidden_grad[i] += grad * sm_embedding[i];
     }
 
     // Learn weights hidden -> output
+//#pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < hs->layer_size; ++i) {
       Real update = grad * hidden[i];
       sm_embedding[i] *= (1 - l2reg);

@@ -53,23 +53,43 @@ class SimpleRecurrentLayer::Updater
 
  private:
   bool use_input_weights_;
+  void worker(int start, int steps);
   IActivation* activation_;
   WeightMatrixUpdater<RowMatrix> syn_rec_;
   WeightMatrixUpdater<RowMatrix> syn_in_;
 };
 
+void SimpleRecurrentLayer::Updater::worker(int start, int steps)
+{
+    int id = omp_get_thread_num();
+    int numThreads = omp_get_num_threads();
+    int startPoint = start + id*((steps+numThreads-1)/numThreads);
+    for(int step = startPoint; step < startPoint + (steps+numThreads-1)/numThreads ; ++step)
+    {
+        if(step != 0){
+            output_.row(step).noalias() += output_.row(step - 1) * syn_rec_.W().transpose();
+        }
+        activation_->Forward(output_.row(step).data(), output_.cols());
+    }
+
+}
 
 void SimpleRecurrentLayer::Updater::ForwardSubSequence(int start, int steps) {
   output_.middleRows(start, steps) = input_.middleRows(start, steps);
   if (use_input_weights_) {
     output_.middleRows(start, steps) *= syn_in_.W().transpose();
   }
-  for (int step = start; step < start + steps; ++step) {
+//#pragma omp parallel num_threads(2)
+  worker(start, steps);
+//#pragma omp parallel for
+ /* for (int step = start; step < start + steps; ++step) {
     if (step != 0) {
       output_.row(step).noalias() += output_.row(step - 1) * syn_rec_.W().transpose();
     }
+//#pragma omp barrier
     activation_->Forward(output_.row(step).data(), output_.cols());
-  }
+    //printf("Size: %d\n\r", output_.cols());
+  }*/
 }
 
 void SimpleRecurrentLayer::Updater::BackwardSequence(

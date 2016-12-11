@@ -1,10 +1,10 @@
-NOTHREAD = 0 # set to 1 to disable threads
-
+NOTHREAD = 1 # set to 1 to disable threads
+NOCUDA = 1
 CC = icc
 CFLAGS = -Wall -march=native -funroll-loops -g -D__STDC_FORMAT_MACROS --std=c++11 -m64
 CFLAGS += -I../ -DEIGEN_DONT_PARALLELIZE # for Eigen
 CFLAGS += $(shell $(CC) -dumpversion | awk '{if(NR==1 && $$1>="4.6") print "-Ofast"; else print "-O3";}')
-phi: CFLAGS += -offload-attribute-target=mic -DRUN_MIC
+phi: CFLAGS += -openmp -DRUN_MIC -offload-attribute-target=mic  
 NVCC_CFLAGS = -O3 -march=native -funroll-loops
 LDFLAGS = -lm -lstdc++
 ifeq ($(NOTHREAD), 1)
@@ -13,7 +13,7 @@ else
 	CFLAGS += -pthread
 endif
 
-NVCC_RESULT := $(shell which nvcc 2> /dev/null)
+NVCC_RESULT := $(NOCUDA) # $(shell which nvcc 2> /dev/null)
 NVCC_TEST := $(notdir $(NVCC_RESULT))
 ifeq ($(NVCC_TEST), nvcc)
 	LDFLAGS += -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas

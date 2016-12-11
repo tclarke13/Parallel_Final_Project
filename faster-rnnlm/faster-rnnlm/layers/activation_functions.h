@@ -3,9 +3,9 @@
 
 #include <math.h>
 #include <algorithm>
-
+#include <omp.h>
 #include "faster-rnnlm/settings.h"
-
+#include <stdio.h>
 
 namespace {
 const Real kReLUTruncation = 20;
@@ -27,6 +27,8 @@ struct IActivation {
 
 struct SigmoidActivation : public IActivation {
   void Forward(Real* hidden, int size) {
+    //printf("SIZE = %d\n\r", size);
+//#pragma omp parallel for
     for (int i = 0; i < size; i++) {
       hidden[i] = exp(hidden[i]) / (1 + exp(hidden[i]));
     }
