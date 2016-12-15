@@ -1,0 +1,11 @@
+tput: No value for $TERM and no -T specified
+THCudaCheck FAIL file=/home/anirbang/torch/extra/cutorch/lib/THC/generic/THCTensorMath.cu line=15 error=8 : invalid device function
+/home/anirbang/torch/install/bin/luajit: ./util/model_utils.lua:56: cuda runtime error (8) : invalid device function at /home/anirbang/torch/extra/cutorch/lib/THC/generic/THCTensorMath.cu:15
+stack traceback:
+	[C]: in function 'fill'
+	./util/model_utils.lua:56: in function 'flatten'
+	./util/model_utils.lua:103: in function 'combine_all_parameters'
+	train.lua:178: in main chunk
+	[C]: in function 'dofile'
+	...bang/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:145: in main chunk
+	[C]: at 0x00404b50

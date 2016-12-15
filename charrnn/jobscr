@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#PBS -q tesla
+#PBS -l walltime=0:20:00
+
+# move to $SCRATCH
+# mkdir ~/scratch
+# export SCRATCH=~/scratch
+cd ~/test_project/15618_project
+
+execdir=~/test_project/15618_project
+exe=th
+args="train.lua -batch_size 200 -rnn_size 512" 
+
+${exe} ${args} > train_LSTM512x2_B200_E50_V2
+

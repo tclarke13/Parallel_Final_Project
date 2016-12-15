@@ -1,0 +1,2 @@
+tput: No value for $TERM and no -T specified
+/var/spool/torque/mom_priv/jobs/142343.latedays.andrew.cmu.edu.SC: line 15: 136997 Killed                  ${exe} ${args} > trainCpu_LSTM128x2_B48_E50

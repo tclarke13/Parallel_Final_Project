@@ -1,0 +1,53 @@
+[?1034husing CUDA on GPU 0...	
+loading data files...	
+cutting off end of data so that the batches/sequences divide evenly	
+reshaping tensor...	
+data load done. Number of data batches in train: 423, val: 23, test: 0	
+vocab size: 65	
+creating an lstm with 2 layers	
+setting forget gate biases to 1 in LSTM layer 1	
+setting forget gate biases to 1 in LSTM layer 2	
+number of parameters in the model: 12932161	
+cloning rnn	
+cloning criterion	
+1/21150 (epoch 0.002), train_loss = 4.19432716, grad/param norm = 1.3827e+00, time/batch = 0.4139s	
+2/21150 (epoch 0.005), train_loss = 6.02702453, grad/param norm = 1.7842e+00, time/batch = 0.2853s	
+3/21150 (epoch 0.007), train_loss = 5.43554014, grad/param norm = 1.0037e+00, time/batch = 0.2851s	
+4/21150 (epoch 0.009), train_loss = 4.97409807, grad/param norm = 1.2222e+00, time/batch = 0.2850s	
+5/21150 (epoch 0.012), train_loss = 4.43522455, grad/param norm = 2.0610e+00, time/batch = 0.2854s	
+6/21150 (epoch 0.014), train_loss = 4.00531097, grad/param norm = 1.1808e+00, time/batch = 0.2860s	
+7/21150 (epoch 0.017), train_loss = 5.06752378, grad/param norm = 1.3643e+00, time/batch = 0.2848s	
+8/21150 (epoch 0.019), train_loss = 4.79889067, grad/param norm = 9.8670e-01, time/batch = 0.2848s	
+9/21150 (epoch 0.021), train_loss = 4.14679080, grad/param norm = 1.1694e+00, time/batch = 0.2857s	
+10/21150 (epoch 0.024), train_loss = 3.66808945, grad/param norm = 6.4165e-01, time/batch = 0.2853s	
+11/21150 (epoch 0.026), train_loss = 3.52553769, grad/param norm = 6.1664e-01, time/batch = 0.2864s	
+12/21150 (epoch 0.028), train_loss = 3.41643867, grad/param norm = 4.8368e-01, time/batch = 0.2852s	
+13/21150 (epoch 0.031), train_loss = 3.34578660, grad/param norm = 3.4915e-01, time/batch = 0.2847s	
+14/21150 (epoch 0.033), train_loss = 3.30631314, grad/param norm = 3.0703e-01, time/batch = 0.2856s	
+15/21150 (epoch 0.035), train_loss = 3.37301425, grad/param norm = 2.3788e-01, time/batch = 0.2847s	
+16/21150 (epoch 0.038), train_loss = 3.35047838, grad/param norm = 1.9277e-01, time/batch = 0.2854s	
+17/21150 (epoch 0.040), train_loss = 3.32011814, grad/param norm = 1.8887e-01, time/batch = 0.2848s	
+18/21150 (epoch 0.043), train_loss = 3.34947250, grad/param norm = 1.7390e-01, time/batch = 0.2853s	
+19/21150 (epoch 0.045), train_loss = 3.32092513, grad/param norm = 1.6297e-01, time/batch = 0.2847s	
+20/21150 (epoch 0.047), train_loss = 3.29403533, grad/param norm = 2.2410e-01, time/batch = 0.2858s	
+21/21150 (epoch 0.050), train_loss = 3.35470334, grad/param norm = 2.4499e-01, time/batch = 0.2857s	
+22/21150 (epoch 0.052), train_loss = 3.35889869, grad/param norm = 2.4348e-01, time/batch = 0.2849s	
+23/21150 (epoch 0.054), train_loss = 3.36358808, grad/param norm = 2.0948e-01, time/batch = 0.2845s	
+24/21150 (epoch 0.057), train_loss = 3.35131057, grad/param norm = 1.4756e-01, time/batch = 0.2844s	
+25/21150 (epoch 0.059), train_loss = 3.39675895, grad/param norm = 1.4709e-01, time/batch = 0.2851s	
+26/21150 (epoch 0.061), train_loss = 3.35730945, grad/param norm = 1.6344e-01, time/batch = 0.2849s	
+27/21150 (epoch 0.064), train_loss = 3.30652207, grad/param norm = 1.6926e-01, time/batch = 0.2853s	
+28/21150 (epoch 0.066), train_loss = 3.29727596, grad/param norm = 1.7005e-01, time/batch = 0.2849s	
+29/21150 (epoch 0.069), train_loss = 3.28487030, grad/param norm = 1.6727e-01, time/batch = 0.2850s	
+30/21150 (epoch 0.071), train_loss = 3.30740335, grad/param norm = 1.7890e-01, time/batch = 0.2857s	
+31/21150 (epoch 0.073), train_loss = 3.35428447, grad/param norm = 1.6683e-01, time/batch = 0.2858s	
+32/21150 (epoch 0.076), train_loss = 3.38470341, grad/param norm = 1.7023e-01, time/batch = 0.2845s	
+33/21150 (epoch 0.078), train_loss = 3.31708986, grad/param norm = 2.3985e-01, time/batch = 0.2843s	
+34/21150 (epoch 0.080), train_loss = 3.35938084, grad/param norm = 2.7893e-01, time/batch = 0.2847s	
+35/21150 (epoch 0.083), train_loss = 3.34687292, grad/param norm = 2.5060e-01, time/batch = 0.2857s	
+36/21150 (epoch 0.085), train_loss = 3.33593064, grad/param norm = 2.6537e-01, time/batch = 0.2850s	
+37/21150 (epoch 0.087), train_loss = 3.34206241, grad/param norm = 3.3544e-01, time/batch = 0.2845s	
+38/21150 (epoch 0.090), train_loss = 3.32236535, grad/param norm = 3.7156e-01, time/batch = 0.2847s	
+39/21150 (epoch 0.092), train_loss = 3.38011200, grad/param norm = 3.7270e-01, time/batch = 0.2839s	
+40/21150 (epoch 0.095), train_loss = 3.36836343, grad/param norm = 3.0073e-01, time/batch = 0.2854s	
+41/21150 (epoch 0.097), train_loss = 3.37710025, grad/param norm = 2.5967e-01, time/batch = 0.2855s	

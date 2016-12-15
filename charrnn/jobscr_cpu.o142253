@@ -1,0 +1,37 @@
+loading data files...	
+cutting off end of data so that the batches/sequences divide evenly	
+reshaping tensor...	
+data load done. Number of data batches in train: 423, val: 23, test: 0	
+vocab size: 65	
+creating an lstm with 2 layers	
+setting forget gate biases to 1 in LSTM layer 1	
+setting forget gate biases to 1 in LSTM layer 2	
+number of parameters in the model: 240321	
+cloning rnn	
+cloning criterion	
+1/21150 (epoch 0.002), train_loss = 4.19803724, grad/param norm = 5.1721e-01, time/batch = 19.2035s	
+2/21150 (epoch 0.005), train_loss = 3.93712096, grad/param norm = 1.4679e+00, time/batch = 22.4474s	
+3/21150 (epoch 0.007), train_loss = 3.43751771, grad/param norm = 9.5793e-01, time/batch = 22.0166s	
+4/21150 (epoch 0.009), train_loss = 3.41289302, grad/param norm = 7.5153e-01, time/batch = 23.8452s	
+5/21150 (epoch 0.012), train_loss = 3.33699641, grad/param norm = 6.9269e-01, time/batch = 25.4633s	
+6/21150 (epoch 0.014), train_loss = 3.37105608, grad/param norm = 5.2300e-01, time/batch = 23.8905s	
+7/21150 (epoch 0.017), train_loss = 3.36710176, grad/param norm = 4.3214e-01, time/batch = 24.9633s	
+8/21150 (epoch 0.019), train_loss = 3.33051405, grad/param norm = 3.9960e-01, time/batch = 23.7020s	
+9/21150 (epoch 0.021), train_loss = 3.29338812, grad/param norm = 3.8692e-01, time/batch = 23.5285s	
+10/21150 (epoch 0.024), train_loss = 3.38265345, grad/param norm = 3.5570e-01, time/batch = 17.6924s	
+11/21150 (epoch 0.026), train_loss = 3.30180840, grad/param norm = 3.5802e-01, time/batch = 20.8692s	
+12/21150 (epoch 0.028), train_loss = 3.32234028, grad/param norm = 2.7511e-01, time/batch = 22.0424s	
+13/21150 (epoch 0.031), train_loss = 3.30897648, grad/param norm = 2.4441e-01, time/batch = 20.6093s	
+14/21150 (epoch 0.033), train_loss = 3.28692222, grad/param norm = 3.4632e-01, time/batch = 21.3763s	
+15/21150 (epoch 0.035), train_loss = 3.36003191, grad/param norm = 3.9644e-01, time/batch = 22.7967s	
+16/21150 (epoch 0.038), train_loss = 3.33848421, grad/param norm = 3.4806e-01, time/batch = 20.9398s	
+17/21150 (epoch 0.040), train_loss = 3.29889104, grad/param norm = 3.9853e-01, time/batch = 22.1363s	
+18/21150 (epoch 0.043), train_loss = 3.31901480, grad/param norm = 2.5557e-01, time/batch = 24.2304s	
+19/21150 (epoch 0.045), train_loss = 3.30151821, grad/param norm = 2.5695e-01, time/batch = 24.9932s	
+20/21150 (epoch 0.047), train_loss = 3.27959467, grad/param norm = 3.9650e-01, time/batch = 21.2605s	
+21/21150 (epoch 0.050), train_loss = 3.32289037, grad/param norm = 4.0551e-01, time/batch = 24.3344s	
+22/21150 (epoch 0.052), train_loss = 3.34279904, grad/param norm = 4.2532e-01, time/batch = 25.0143s	
+23/21150 (epoch 0.054), train_loss = 3.34371623, grad/param norm = 3.1156e-01, time/batch = 24.0034s	
+24/21150 (epoch 0.057), train_loss = 3.34361341, grad/param norm = 2.6665e-01, time/batch = 23.7753s	
+25/21150 (epoch 0.059), train_loss = 3.38630147, grad/param norm = 2.8602e-01, time/batch = 20.8314s	
+26/21150 (epoch 0.061), train_loss = 3.34342088, grad/param norm = 3.1997e-01, time/batch = 21.5502s	

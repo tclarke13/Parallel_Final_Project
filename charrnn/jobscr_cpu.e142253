@@ -1,0 +1,2 @@
+tput: No value for $TERM and no -T specified
+/var/spool/torque/mom_priv/jobs/142253.latedays.andrew.cmu.edu.SC: line 11: 30473 Killed                  ${exe} ${args}

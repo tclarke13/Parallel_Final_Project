@@ -1,0 +1,2 @@
+tput: No value for $TERM and no -T specified
+=>> PBS: job killed: walltime 1205 exceeded limit 1200

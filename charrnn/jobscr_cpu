@@ -1,0 +1,12 @@
+#!/bin/bash
+
+
+
+cd ~/test_project/15618_project
+
+execdir=~/test_project/15618_project
+exe=th
+args="train.lua -gpuid -1"
+
+${exe} ${args}
+

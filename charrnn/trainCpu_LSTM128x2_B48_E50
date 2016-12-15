@@ -1,0 +1,22 @@
+loading data files...	
+cutting off end of data so that the batches/sequences divide evenly	
+reshaping tensor...	
+data load done. Number of data batches in train: 440, val: 24, test: 0	
+vocab size: 65	
+creating an lstm with 2 layers	
+setting forget gate biases to 1 in LSTM layer 1	
+setting forget gate biases to 1 in LSTM layer 2	
+number of parameters in the model: 240321	
+cloning rnn	
+cloning criterion	
+1/22000 (epoch 0.002), train_loss = 4.19876694, grad/param norm = 5.1771e-01, time/batch = 19.1778s	
+2/22000 (epoch 0.005), train_loss = 3.95252769, grad/param norm = 1.4236e+00, time/batch = 19.9963s	
+3/22000 (epoch 0.007), train_loss = 3.38589230, grad/param norm = 9.2242e-01, time/batch = 19.7793s	
+4/22000 (epoch 0.009), train_loss = 3.40241781, grad/param norm = 6.0898e-01, time/batch = 19.8473s	
+5/22000 (epoch 0.011), train_loss = 3.29842024, grad/param norm = 6.6306e-01, time/batch = 19.8123s	
+6/22000 (epoch 0.014), train_loss = 3.33308289, grad/param norm = 5.6158e-01, time/batch = 20.6695s	
+7/22000 (epoch 0.016), train_loss = 3.30551790, grad/param norm = 5.4537e-01, time/batch = 22.8503s	
+8/22000 (epoch 0.018), train_loss = 3.35017162, grad/param norm = 3.7736e-01, time/batch = 51.5932s	
+9/22000 (epoch 0.020), train_loss = 3.29077531, grad/param norm = 4.2345e-01, time/batch = 59.7056s	
+10/22000 (epoch 0.023), train_loss = 3.28965319, grad/param norm = 2.4317e-01, time/batch = 21.1892s	
+11/22000 (epoch 0.025), train_loss = 3.32368325, grad/param norm = 3.3430e-01, time/batch = 19.1022s	

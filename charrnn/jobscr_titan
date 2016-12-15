@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#PBS -q titanx
+
+# move to $SCRATCH
+# mkdir ~/scratch
+# export SCRATCH=~/scratch
+cd ~/test_project/15618_project
+
+execdir=~/test_project/15618_project
+exe=th
+args="train.lua -max_epochs 10"
+
+${exe} ${args}
+
